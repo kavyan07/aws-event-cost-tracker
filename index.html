@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ahmedabad Event Cost Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial; max-width: 800px; margin: 50px auto; }
+    form { margin: 20px 0; }
+    input, button { padding: 10px; margin: 5px; font-size: 16px; }
+    canvas { max-width: 100%; }
+    #status { color: green; }
+  </style>
+</head>
+<body>
+  <h1>🌟 Ahmedabad Local Event Cost Tracker</h1>
+  <p>Add events like Navratri, IPL matches, Rann Utsav. Track budget vs spend!</p>
+  
+  <form id="eventForm">
+    <input id="name" placeholder="Event Name (e.g., Garba Night)" required>
+    <input id="budget" type="number" placeholder="Budget (₹ Rs)" required min="1">
+    <button type="submit">🚀 Track Event</button>
+  </form>
+  
+  <div id="status"></div>
+  <h2>Budget Dashboard</h2>
+  <canvas id="budgetChart" width="400" height="400"></canvas>
+  
+  <script>
+    // UPDATE THIS with your API URL after Step 10
+    const API_BASE = 'https://your-api-here.execute-api.ap-south-1.amazonaws.com/Prod/';
+    
+    document.getElementById('eventForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value;
+      const budget = parseFloat(document.getElementById('budget').value);
+      document.getElementById('status').textContent = 'Adding event...';
+      
+      try {
+        const res = await fetch(`${API_BASE}add`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, budget })
+        });
+        if (res.ok) {
+          document.getElementById('status').textContent = '✅ Event added! Refresh dashboard.';
+          document.getElementById('eventForm').reset();
+        }
+      } catch (e) {
+        document.getElementById('status').textContent = '❌ API not ready yet - Step 10';
+      }
+    });
+    
+    async function loadDashboard() {
+      try {
+        const res = await fetch(`${API_BASE}stats`);
+        const stats = await res.json();
+        const ctx = document.getElementById('budgetChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: stats.map(s => s.name),
+            datasets: [{
+              data: stats.map(s => s.spent_pct || 0),
+              backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
+            }]
+          },
+          options: { title: { display: true, text: 'Budget Used %' } }
+        });
+      } catch (e) {
+        console.log('Dashboard loading after backend');
+      }
+    }
+    loadDashboard();
+  </script>
+</body>
+</html>
